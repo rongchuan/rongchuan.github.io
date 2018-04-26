@@ -8,19 +8,11 @@
 
 其实在之前的管控系统开发过程中，我们已经把管控的一些部件拆出去，比如umars的publisher、builder、switcher，autobots的autoscheduler、autoboss、autobuilder。
 
-以autobots为例，目前的架构大致如下：
-
-![autobots](http://git.cn-hangzhou.oss-cdn.aliyun-inc.com/uploads/auto_umars/document/50184a209df19db6a636ac5567c9be1c/autobots.png)
-
 但是还不够，集群的管理逻辑目前散落在autoweb和autoscheduler当中，而且autoweb作为展示层托管了太多业务逻辑。
 
 ### 模块划分：垂直划分 && 水平划分
 
 把一个复杂系统拆分成多个微服务，业务层面的划分(水平划分)是不可避免的，比如管控系统将在线链路和离线链路显式地拆成两块微服务。但是单从业务来做划分是不够的，要同时考虑到以后不断出现的新语言、新架构、新技术，我们需要根据升级的代价考量服务切分(垂直划分)，比如前后端分离就是在语言层面分离出两个服务，前端架构升级时不用后台配合修改模板。出于这种考虑，在线服务链路被拆成流程服务和集群原子操作服务。
-
-最终autoumars的微服务划分如下：
-
-![成本组成 (2).png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5a902db31a0c4e4bde595d60d762bb0f.png)
 
 ## 选型
 
@@ -53,11 +45,11 @@ rpc性能更好，但是开发复杂度高，管控在通信上没有太高的�
 * 模板系统，Velocity vs Thymeleaf：选择Thymeleaf，Thymeleaf对原生html语法支持更好。前端单页应用的入口页面渲染需要用到Thymeleaf，在这里做buc认证构造cookie并将用户信息返回前端，这一项之后会考虑去掉，登录模块放到前端做；
 * url入口controller层，Spring MVC vs Jersey：选择Spring MVC，它和Jersey都支持REST webservice，只是后者的实现参照了java REST标准JAX-RS，而Spring MVC自成一派。考虑到除controller以外我们用到的都是spring框架的东西，而Spring MVC与spring框架天然契合。至于性能不是考量的标准，因为性能差异基本上在json的处理上，两者用的json转换框架都是别的开源组件。
 
-后端对数据库的操作代码写起来比较繁琐，但是结构基本相同，我们沉淀了一个生成数据库mapper代码的[工具](http://gitlab.alibaba-inc.com/auto_umars/spring-boot-template/blob/master/codegentool.zip)。
+后端对数据库的操作代码写起来比较繁琐，但是结构基本相同，我们沉淀了一个生成数据库mapper代码的工具。
 
 #### 前端选型：React + React native
 
-Autoumars在接igraph管控时对前端的定位是web + mobile，而能够做到学习一次在两端都可以开发的框架，据我所知只有react和vue，对应的移动端分别使用react native和weex。出于笔者个人熟悉程度的原因，我们选择React + React native的架构，样式组件框架使用蚂蚁开源的Ant Design，它有支持react和react native的版本，antd的示例非常全，上手很快。web端介绍见[这里](https://www.atatech.org/articles/75373)。
+Autoumars在接igraph管控时对前端的定位是web + mobile，而能够做到学习一次在两端都可以开发的框架，据我所知只有react和vue，对应的移动端分别使用react native和weex。出于笔者个人熟悉程度的原因，我们选择React + React native的架构，样式组件框架使用蚂蚁开源的Ant Design，它有支持react和react native的版本，antd的示例非常全，上手很快。web端介绍见这里。
 
 目前Autoumars-iGraph管控[web](https://igraph-cn.alibaba-inc.com/)已经上线，[移动端](http://gitlab.alibaba-inc.com/auto_umars/autoumars-mobile)正在摸索开发中，原型见图：
 
@@ -68,8 +60,6 @@ Autoumars在接igraph管控时对前端的定位是web + mobile，而能够做�
 ### 职责划分，协作开发
 
 微服务架构下，每个人负责一个单独的功能模块并以接口的形式提供服务，Autoumars的切换组件、回流组件、数据中心组件、服务中心组件，各有一个人负责，各个组件之间有相互调用的关系，这时候接口的协定就显得非常重要了。wiki上写API文档是一种比较低效的方案，如果我们写好代码框架能自动生成文档，那就最好不过，swagger就是这么干的，使用简单的描述，加上REST API的协定，基本上就能知道接口的功能了。
-
-![屏幕快照 2017-10-27 下午5.12.00.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7cab91a4a7d52f250c42dcca921325ad.png)
 
 #### 接口协定
 
@@ -82,8 +72,6 @@ Autoumars在接igraph管控时对前端的定位是web + mobile，而能够做�
 #### 路由
 
 我们调研了Netflix的微服务解决方案，它提供一套完整的服务注册、服务路由、负载均衡方案，考虑到之后的运行时运维操作如扩缩容，渐进发布等等，使用Netflix的方案需要我们额外地开发运维功能，而使用集团的LVS作负载均衡可以省掉这些麻烦，配套的freedom发布、psp扩容都是现成可以用的，因此我们只选择zuul作为服务路由方案，至于服务注册就得我们自己做了。原生的zuul路由规则是写在启动配置里面的，无法动态管理，我们对zuul做了改造，将路由规则持久化到数据库当中，定时将数据库的路由规则同步到进程运行时上下文当中生效。
-
-![屏幕快照 2017-10-29 下午9.58.11.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/538b9fcd3d7495d72095738a850ac00b.png)
 
 #### 权限管理
 
@@ -132,16 +120,8 @@ Autoumars在接igraph管控时对前端的定位是web + mobile，而能够做�
 
 ### 服务部署 && 持续集成
 
-Autoumars目前的微服务数目也达到10+了，部署一套完整的系统相对而言还是比较费事的，我们使用ansible([介绍](https://www.atatech.org/articles/75332))来编排整个系统的编译打包部署工作，依次拉起所有的微服务，最开始的时候都部署在一台物理机上，ansible的纵向服务管理优势明显，但是当我们有预发、日常、新加坡、中美俄四套环境之后，这种部署方式在服务可用性和迭代发布上的弱势凸显出来了，对于一个服务多套环境的横向管理，ansible显得略微力不从心。我们对单个微服务做了容器化改造，单服务做多机房多机部署，并接入aone pipeline管理四个环境的迭代发布。单服务的持续集成见下图：
-
-![屏幕快照 2017-10-29 下午10.22.31.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca598f4915355044c4c985a85de002ae.png)
+Autoumars目前的微服务数目也达到10+了，部署一套完整的系统相对而言还是比较费事的，我们使用ansible来编排整个系统的编译打包部署工作，依次拉起所有的微服务，最开始的时候都部署在一台物理机上，ansible的纵向服务管理优势明显，但是当我们有预发、日常、新加坡、中美俄四套环境之后，这种部署方式在服务可用性和迭代发布上的弱势凸显出来了，对于一个服务多套环境的横向管理，ansible显得略微力不从心。我们对单个微服务做了容器化改造，单服务做多机房多机部署，并接入aone pipeline管理四个环境的迭代发布。单服务的持续集成见下图：
 
 最终整个系统的部署结构如下图：
 
-![search link (1).png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7dfa1631e7776234568fca1cb608cb1c.png)
-
 aone在单应用多环境的横向管理上做的很好，但是对于有同环境多个应用的微服务结构而言，ansible的纵向管理方式比aone更好，咨询得知目前aone不会对微服务的架构专门设定方案，另外aone对应用的定义是比较重的，我们正在解决这个问题，期望是托管在hippo上，使用ansible + 一个轻量级应用平台来管理微服务结构系统。
-
-### 致谢
-
-项目组同学：玄梓、兴元、谷川、笑至
