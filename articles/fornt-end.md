@@ -1,5 +1,3 @@
-随着个性化推荐业务的爆炸式增长，[iGraph](https://www.atatech.org/articles/31878)已经成长为一个托管了4000+张表的在线图存储和查询服务平台。同时，管理iGraph数据和服务的管控系统的前端也在不断地调整以适应业务的快速增长，从业务接入系统[Umars-web](http://online.igraph.proxy.taobao.org/)到iGraph运维白屏化及自动化的[Umars-service](http://umars-service.alibaba-inc.com/)到如今待上线的iGraph、DII统一管控平台[Autoumars](https://igraph-cn.alibaba-inc.com)经历了几年的变迁。下面我将通过这几个平台的变迁来讲述我所看到的前端演进过程。
-
 
 ### 前端初体验
 
@@ -51,7 +49,7 @@
 
 但是这种模式缺点也是很明显的，页面的展示前置依赖于数据的获取，如果后端获取一项数据失败了，那么用户看到的页面有可能就会出问题，前后端的耦合太重，想象一下，很可能你改了一个数据库字段，页面就显示不出来了。显然一个用户体验更好的方式是，即使后台报错了，页面还是能看的，并且能够把错误信息抛出来。
 
-Umars-web中的一个混写的例子(PHP)：
+一个混写的例子(PHP)：
 
 ```
 <td>
@@ -108,8 +106,7 @@ function control_task(e,status){
 }
 ```
 ajax出现以后，前端的功能极大丰富起来，因为在使用ajax以后，后端的在整个web应用功能中所占的比重下降了，它只是作为一个数据的提供者，数据获取到以后，怎么过滤，怎么取交集、并集，怎么格式化，全部交给javascript来做了，因此js的代码大量增加，出现了较多javascript基础库来扩展javascript的功能；其中最著名的当属jQuery。
-
-Umars-service就是在这样的异步交互架构下搭建起来的，除了ajax异步刷新以外，在前端也使用了丰富的js库来更好地展现，比如用[codemirror](https://github.com/codemirror/codemirror)来做web编辑器支持配置变更，用[jsdifflib](https://github.com/cemerick/jsdifflib)来做不同版本的配置diff，用d3(比如以前做的[域名链路](http://psp.alibaba-inc.com/paas/domainChange/showDomainChain.htm?dom=suggest.taobao.com))呈现负载大盘等等。
+xxxx就是在这样的异步交互架构下搭建起来的，除了ajax异步刷新以外，在前端也使用了丰富的js库来更好地展现，比如用[codemirror](https://github.com/codemirror/codemirror)来做web编辑器支持配置变更，用[jsdifflib](https://github.com/cemerick/jsdifflib)来做不同版本的配置diff，用d3呈现负载大盘等等。
 
 配置Diff
 ![屏幕快照 2017-09-07 下午11.42.55.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/340b3bd9c37df32292c235feb1358fea.png)
@@ -209,7 +206,7 @@ view和model做到数据绑定以后，原来的面向DOM的开发模式转变�
 
 ![flux](http://git.cn-hangzhou.oss.aliyun-inc.com/uploads/auto_umars/autoumars-web/08bf41c5176201635a37cfd568b1c26d/flux.jpeg)
 
-在Autoumars项目中，我们选择了[React](https://facebook.github.io/react/) + [dva](https://github.com/dvajs/dva) + [antd](https://ant.design/)的模式，得益于统一状态管理和React的组件化开发模式，我们发现，相比于之前采用html + css + js的简单web工程管理方式，React技术栈的工程化程度有了翻天覆地的变化，view和model都可以复用了。
+在xxx项目中，我们选择了[React](https://facebook.github.io/react/) + [dva](https://github.com/dvajs/dva) + [antd](https://ant.design/)的模式，得益于统一状态管理和React的组件化开发模式，我们发现，相比于之前采用html + css + js的简单web工程管理方式，React技术栈的工程化程度有了翻天覆地的变化，view和model都可以复用了。
 
 ### 前端工程化
 
